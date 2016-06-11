@@ -5,7 +5,10 @@ import java.util.List;
 
 import org.hibernate.Criteria;
 import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
+import org.hibernate.sql.JoinType;
+import org.hibernate.transform.Transformers;
 
 import br.com.sisnema.financeiroweb.model.Conta;
 import br.com.sisnema.financeiroweb.model.Lancamento;
@@ -21,20 +24,45 @@ public class LancamentoDAO extends DAO<Lancamento> {
 		return null;
 	}
 
-	public List<LancamentoVO> pesquisar(Conta conta, Date dataInicio, Date dataFim){
-		Criteria criteria = getSession().createCriteria(Lancamento.class);
-		criteria.add(Restrictions.eq("conta", conta));
-		if(dataInicio != null && dataFim != null){
-			criteria.add(Restrictions.between("data", dataInicio, dataFim));
+	/*
+	 * Criar um método que pesquise todos os lancamentos de uma determinada
+	 * conta em um determinado periodo de tempo ordenadas por data ascendente
+	 */
+	public List<LancamentoVO> pesquisar(Conta conta, Date dataInicio, Date dataFim) {
+
+		// definimos sobre qual tabela sera a consulta
+		Criteria criteria = getSession().createCriteria(Lancamento.class, "lanc");
+
+		criteria.createAlias("lanc." + Lancamento.Fields.CATEGORIA.toString(), "categoria", JoinType.INNER_JOIN);
+
+		criteria.add(Restrictions.eq(Lancamento.Fields.CONTA.toString(), conta));
+
+		if (dataInicio != null && dataFim != null) {
+			criteria.add(Restrictions.between(Lancamento.Fields.DATA.toString(), dataInicio, dataFim));
+
+		} else if (dataInicio != null) {
+			criteria.add(Restrictions.ge(Lancamento.Fields.DATA.toString(), dataInicio));
+
+		} else if (dataFim != null) {
+			criteria.add(Restrictions.le(Lancamento.Fields.DATA.toString(), dataFim));
 		}
-		else if(dataInicio != null){
-			criteria.add(Restrictions.ge("data", dataInicio));
-		} else {
-			criteria.add(Restrictions.le("data", dataFim));
-		}
-		criteria.addOrder(Order.asc("data"));
-		return null;
-		
+
+		criteria.addOrder(Order.asc(Lancamento.Fields.DATA.toString()));
+
+		// projeção == campos que se deseja retornar
+		criteria.setProjection(Projections.projectionList()
+				.add(Projections.property(Lancamento.Fields.CODIGO.toString()), LancamentoVO.Fields.CODIGO.toString())
+				.add(Projections.property(Lancamento.Fields.DATA.toString()), LancamentoVO.Fields.DATA.toString())
+				.add(Projections.property(Lancamento.Fields.DESCRICAO.toString()),
+						LancamentoVO.Fields.DESCRICAO.toString())
+				.add(Projections.property(Lancamento.Fields.VALOR.toString()), LancamentoVO.Fields.VALOR.toString())
+				.add(Projections.property(Lancamento.Fields.FATOR_CATEGORIA.toString()),
+						LancamentoVO.Fields.FATOR_CATEGORIA.toString()));
+
+		// alteramos o resultado da consulta para um VO
+		criteria.setResultTransformer(Transformers.aliasToBean(LancamentoVO.class));
+
+		return criteria.list();
 	}
 
 }
