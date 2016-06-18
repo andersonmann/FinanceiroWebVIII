@@ -1,9 +1,11 @@
 package br.com.sisnema.financeiroweb.dao;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
 import org.hibernate.Criteria;
+import org.hibernate.SQLQuery;
 import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
@@ -63,6 +65,27 @@ public class LancamentoDAO extends DAO<Lancamento> {
 		criteria.setResultTransformer(Transformers.aliasToBean(LancamentoVO.class));
 
 		return criteria.list();
+	}
+
+	// a soma do saldo de todos os lancamentos de uma conta até uma determinada
+	// data
+	public float saldo(Conta conta, Date date) {
+
+		String sql = "select sum(lanc.valor * cat.fator) " + " from lancamento lanc "
+				+ "   inner join categoria cat on cat.codigo = lanc.cod_categoria " + " where lanc.cod_conta = :conta"
+				+ "   and lanc.data <= :data";
+
+		SQLQuery query = getSession().createSQLQuery(sql);
+		query.setParameter("conta", conta.getCodigo());
+		query.setParameter("data", date);
+
+		BigDecimal result = (BigDecimal) query.uniqueResult();
+
+		if (result != null) {
+			return result.floatValue();
+		}
+
+		return 0f;
 	}
 
 }

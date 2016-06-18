@@ -28,15 +28,15 @@ public class Lancamento extends BaseEntity{
 	private BigDecimal valor;
 	
 	@ManyToOne
-	@JoinColumn(nullable = false)
+	@JoinColumn(name = "cod_usuario", nullable = false)
 	private Usuario usuario;
 	
 	@ManyToOne
-	@JoinColumn(nullable = false)
+	@JoinColumn(name = "cod_conta", nullable = false)
 	private Conta conta;
 	
 	@ManyToOne
-	@JoinColumn(nullable = false)
+	@JoinColumn(name = "cod_categoria", nullable = false)
 	private Categoria categoria;
 	
 	public Lancamento() {
